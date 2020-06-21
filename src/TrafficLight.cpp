@@ -70,34 +70,37 @@ void TrafficLight::cycleThroughPhases()
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
+  auto previous_time = std::chrono::system_clock::now();
   std::random_device rd;
   std::mt19937 eng(rd());
-  std:: uniform_int_distribution<> distr(4*100,6*100); //in milisec
-
-  auto previous_time = std::chrono::system_clock::now();
+  std:: uniform_int_distribution<> distr(4000,6000); //in milisec
+  auto light_cycle_duration = distr(eng);
+  
   while(true)
   { 
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	long loop_duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - previous_time).count();
-    auto light_cycle_duration = distr(eng)/100.0;
+	long loop_duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - previous_time).count();
+    
     
   	
     if (loop_duration >= light_cycle_duration){
-    	if (_currentPhase == red)
+    	if (_currentPhase == TrafficLightPhase::red)
     	{
-     	 _currentPhase = green;
+     	 _currentPhase = TrafficLightPhase::green;
     	}else
     	{
-     	 _currentPhase = red; 
+     	 _currentPhase = TrafficLightPhase::red; 
     	}
       
-      auto future = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send,
-                               &_queue,  
-                               std::move(_currentPhase));
+      //auto future = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send,
+                              // &_queue,  
+                              // std::move(_currentPhase));
+      _queue.send(std::move(_currentPhase));
       
-      future.wait();
+      
       previous_time = std::chrono::system_clock::now();
     }
+    
   }
 }
 
